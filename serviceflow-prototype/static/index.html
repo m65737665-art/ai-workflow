@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ServiceFlow AI – Operations Agent Prototype</title>
+  <!-- Tailwind CSS CDN for instant zero-build styling -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: { 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { background-color: #0b0f19; color: #f1f5f9; font-family: system-ui, -apple-system, sans-serif; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-[#0f172a] border-b border-slate-800 sticky top-0 z-30">
+    <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center font-bold text-white shadow-md">
+          ⚡
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-base font-extrabold text-white tracking-tight">ServiceFlow AI</h1>
+            <span class="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              Operations Agent
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-400">Autonomous Enquiry Processing & Dispatch Engine</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-1.5 text-xs text-emerald-400 font-semibold bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+          <span class="h-2 w-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Agent Online</span>
+        </div>
+        <button onclick="resetData()" class="text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded bg-slate-800 border border-slate-700">
+          Reset Demo
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="max-w-7xl w-full mx-auto px-4 py-6 space-y-6 flex-1">
+
+    <!-- Demo Scenarios Bar -->
+    <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+          <span>🚀 1-Click Interactive Demo Scenarios</span>
+        </h2>
+        <span class="text-[11px] text-slate-400">Click any preset to trigger the live LangGraph agent</span>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <button onclick="runPreset('hvac')" class="p-3 bg-cyan-950/20 border border-cyan-500/30 hover:border-cyan-400 rounded-lg text-left transition text-xs">
+          <div class="font-bold text-cyan-300">❄️ Server Room HVAC Overheating</div>
+          <div class="text-[10px] text-slate-400 mt-1">High urgency • North Zone • Heat pump vibration</div>
+        </button>
+        <button onclick="runPreset('electrical')" class="p-3 bg-amber-950/20 border border-amber-500/30 hover:border-amber-400 rounded-lg text-left transition text-xs">
+          <div class="font-bold text-amber-300">⚡ Warehouse Breaker Sparks</div>
+          <div class="text-[10px] text-slate-400 mt-1">Emergency • Downtown • Industrial line halted</div>
+        </button>
+        <button onclick="runPreset('plumbing')" class="p-3 bg-blue-950/20 border border-blue-500/30 hover:border-blue-400 rounded-lg text-left transition text-xs">
+          <div class="font-bold text-blue-300">🚰 Restaurant Grease Trap Leak</div>
+          <div class="text-[10px] text-slate-400 mt-1">High urgency • West Suburbs • Floor flooding</div>
+        </button>
+        <button onclick="runPreset('missing')" class="p-3 bg-rose-950/20 border border-rose-500/30 hover:border-rose-400 rounded-lg text-left transition text-xs">
+          <div class="font-bold text-rose-300">❓ Incomplete Info (Error Handling)</div>
+          <div class="text-[10px] text-slate-400 mt-1">Missing address • Triggers clarification email</div>
+        </button>
+      </div>
+    </div>
+
+    <!-- Custom Request Ingest Input -->
+    <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-4">
+      <div class="flex items-center justify-between mb-2">
+        <label class="text-xs font-bold uppercase tracking-wider text-slate-300">
+          Or Type / Paste Any Custom Customer Enquiry
+        </label>
+        <span class="text-[11px] text-blue-400">Agent extracts name, location, urgency, & service</span>
+      </div>
+      <div class="flex gap-2">
+        <input id="customInput" type="text" placeholder="e.g. 'Emergency electrical outage at 450 Oak St, Downtown. Call Sarah at 555-891-2233.'" 
+               class="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-blue-500 font-mono">
+        <button onclick="submitCustom()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg text-xs font-bold transition">
+          Run Agent ⚡
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Human Approval Spotlight -->
+    <div id="approvalsSection" class="hidden bg-[#131b2e] border-2 border-amber-500/40 rounded-xl p-5 shadow-lg shadow-amber-500/5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center space-x-2">
+          <span class="text-base">🛡️</span>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">
+            Human-in-the-Loop Sign-Off Checkpoint
+          </h2>
+          <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/30">
+            Action Required
+          </span>
+        </div>
+        <span class="text-xs text-slate-400">Review AI plan before automated execution</span>
+      </div>
+
+      <div id="approvalsList" class="space-y-4"></div>
+    </div>
+
+    <!-- 2-Column Core Layout -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+      <!-- Left Column (2 spans): Enquiries Inbox & Calendar -->
+      <div class="lg:col-span-2 space-y-6">
+
+        <!-- Enquiries Inbox -->
+        <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+              <span>📥 Enquiries Inbox & AI Extraction</span>
+            </h3>
+            <span id="enquiryCount" class="text-xs text-slate-400">0 enquiries</span>
+          </div>
+          <div id="enquiriesList" class="space-y-3"></div>
+        </div>
+
+        <!-- Scheduled Calendar Bookings -->
+        <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+              <span>📅 Google Calendar Scheduled Bookings</span>
+            </h3>
+            <span class="text-[10px] text-emerald-400 font-bold">✓ Conflict-Free</span>
+          </div>
+          <div id="calendarList" class="space-y-2"></div>
+        </div>
+
+        <!-- Dispatched Gmail Outbox -->
+        <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-1.5">
+              <span>✉️ Gmail Outbox (Automated Dispatch Logs)</span>
+            </h3>
+            <span class="text-[10px] text-blue-400 font-bold">API Verified</span>
+          </div>
+          <div id="emailsList" class="space-y-2"></div>
+        </div>
+
+      </div>
+
+      <!-- Right Column (1 span): Live Agent Activity Feed & Fleet -->
+      <div class="space-y-6">
+
+        <!-- Fleet Roster -->
+        <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-5">
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider mb-3">
+            👨‍🔧 Technician Fleet
+          </h3>
+          <div id="techList" class="space-y-2.5"></div>
+        </div>
+
+        <!-- Live Operations Telemetry Stream -->
+        <div class="bg-[#131b2e] border border-slate-800 rounded-xl p-5">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-xs font-bold text-white uppercase tracking-wider">
+              🤖 LangGraph Telemetry Stream
+            </h3>
+            <span class="text-[10px] font-mono text-indigo-400">Audit Trail</span>
+          </div>
+          <div id="logsList" class="space-y-2 max-h-96 overflow-y-auto pr-1"></div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- Modal for Human Approval Editing -->
+  <div id="editModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+    <div class="bg-[#101726] border border-slate-700 rounded-xl max-w-xl w-full p-6 space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+        <h3 class="font-bold text-sm text-white">Review & Edit Action Plan</h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Customer Email Subject</label>
+        <input id="modalSubject" type="text" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs text-white">
+      </div>
+      <div>
+        <label class="text-xs text-slate-400 block mb-1">Customer Email Body</label>
+        <textarea id="modalBody" rows="6" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-xs font-mono text-white"></textarea>
+      </div>
+      <div class="flex justify-end space-x-2 pt-2">
+        <button onclick="closeModal()" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button onclick="submitApprovalFromModal()" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded transition">
+          Approve & Execute Dispatch
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let activeEnquiryId = null;
+
+    const PRESETS = {
+      hvac: "URGENT: Our central server room heat-pump AC system is vibrating loudly and blowing warm air (82F). Need an HVAC tech right away at 1200 Beacon Blvd, North Zone. Contact: sysadmin@cloudcore.io or 555-019-8822.",
+      electrical: "EMERGENCY! Main breaker panel in packaging line sparked and tripped twice today. We smell burnt insulation. Need master electrician ASAP at 740 Industrial Pkwy, Downtown. Call 555-883-9102 or dave@packlogic.com.",
+      plumbing: "Hello, our restaurant kitchen grease trap line is overflowing onto the floor and dinner prep starts tomorrow. Need a commercial plumber at 89 Bay St, West Suburbs. Tel: 555-442-1980.",
+      missing: "Hi, our system is acting weird. Can someone come take a look sometime soon? Thanks, Alex."
+    };
+
+    async function loadState() {
+      try {
+        const res = await fetch('/api/state');
+        const data = await res.json();
+        renderDashboard(data);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderDashboard(data) {
+      // 1. Pending Approvals
+      const pending = data.enquiries.filter(e => e.status === 'AWAITING_APPROVAL');
+      const approvalsSec = document.getElementById('approvalsSection');
+      const approvalsList = document.getElementById('approvalsList');
+      
+      if (pending.length > 0) {
+        approvalsSec.classList.remove('hidden');
+        approvalsList.innerHTML = pending.map(e => `
+          <div class="bg-slate-900 border border-slate-700 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="text-xs font-bold text-white">Enquiry #${e.enquiry_id}: ${e.customer_name}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-semibold">${e.service_type}</span>
+                <span class="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">${e.urgency}</span>
+              </div>
+              <p class="text-xs text-slate-300 font-mono">"${e.raw_message}"</p>
+              <div class="text-[11px] text-slate-400">
+                Matched: <strong class="text-white">${e.matched_technician?.name || 'Assigned Tech'}</strong> (${e.matched_technician?.skills?.join(', ') || ''})
+                • Window: <strong class="text-indigo-400">${e.proposed_slot?.formatted || 'TBD'}</strong>
+              </div>
+            </div>
+            <div class="flex items-center space-x-2 shrink-0">
+              <button onclick="openModal(${e.enquiry_id}, \`${e.email_draft_subject}\`, \`${encodeURIComponent(e.email_draft_body)}\`)" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs">
+                Edit Draft
+              </button>
+              <button onclick="approveDirect(${e.enquiry_id})" class="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow-md">
+                ✓ Approve Dispatch
+              </button>
+              <button onclick="rejectPlan(${e.enquiry_id})" class="px-3 py-1.5 bg-rose-950/40 text-rose-300 border border-rose-500/30 hover:bg-rose-900/40 rounded-lg text-xs">
+                ✕ Reject
+              </button>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        approvalsSec.classList.add('hidden');
+      }
+
+      // 2. Enquiries Inbox
+      document.getElementById('enquiryCount').innerText = `${data.enquiries.length} enquiries`;
+      document.getElementById('enquiriesList').innerHTML = data.enquiries.map(e => `
+        <div class="p-3 bg-slate-900/60 border border-slate-800 rounded-lg flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div class="space-y-0.5">
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-bold text-white">${e.customer_name || 'Client'}</span>
+              <span class="text-[10px] text-slate-400">${e.customer_address || 'No location'}</span>
+              <span class="text-[10px] font-bold text-blue-400">• ${e.service_type}</span>
+            </div>
+            <p class="text-[11px] text-slate-300 font-mono truncate max-w-xl">"${e.raw_message}"</p>
+          </div>
+          <span class="text-[10px] px-2 py-0.5 rounded-full font-bold border shrink-0 ${
+            e.status === 'SCHEDULED' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+            e.status === 'AWAITING_APPROVAL' ? 'bg-amber-500/10 text-amber-300 border-amber-500/30' :
+            e.status === 'NEEDS_INFO' ? 'bg-rose-500/10 text-rose-300 border-rose-500/30' :
+            'bg-slate-800 text-slate-400 border-slate-700'
+          }">${e.status}</span>
+        </div>
+      `).join('');
+
+      // 3. Scheduled Calendar Bookings
+      document.getElementById('calendarList').innerHTML = data.bookings.length === 0 ? 
+        '<div class="text-center py-6 text-slate-500 text-xs">No bookings yet. Approve an action plan above to schedule.</div>' :
+        data.bookings.map(b => `
+          <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-lg flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-white">${b.technician} — ${b.service}</div>
+              <div class="text-[11px] text-indigo-400">${b.slot} • ${b.location}</div>
+            </div>
+            <a href="${b.google_calendar_link}" target="_blank" class="text-[11px] text-blue-400 hover:underline">Google Calendar ↗</a>
+          </div>
+        `).join('');
+
+      // 4. Gmail Outbox
+      document.getElementById('emailsList').innerHTML = data.sent_emails.length === 0 ?
+        '<div class="text-center py-6 text-slate-500 text-xs">No sent emails yet.</div>' :
+        data.sent_emails.map(m => `
+          <div class="p-2.5 bg-slate-900/80 border border-slate-800 rounded-lg text-xs space-y-1">
+            <div class="flex justify-between text-slate-400">
+              <span>To: <strong class="text-blue-300">${m.to}</strong></span>
+              <span class="text-[10px] text-emerald-400">${m.status}</span>
+            </div>
+            <div class="font-semibold text-white truncate">${m.subject}</div>
+          </div>
+        `).join('');
+
+      // 5. Technicians
+      document.getElementById('techList').innerHTML = data.technicians.map(t => `
+        <div class="p-2.5 bg-slate-900/60 border border-slate-800 rounded-lg text-xs flex justify-between items-center">
+          <div>
+            <div class="font-bold text-white">${t.name} <span class="text-amber-400 font-normal">(${t.rating}★)</span></div>
+            <div class="text-[10px] text-slate-400">${t.skills.join(', ')}</div>
+          </div>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">On Duty</span>
+        </div>
+      `).join('');
+
+      // 6. Audit Logs
+      document.getElementById('logsList').innerHTML = data.logs.map(l => `
+        <div class="p-2 bg-slate-900/40 border border-slate-800/80 rounded text-[11px] space-y-0.5">
+          <div class="flex justify-between font-mono text-[10px]">
+            <span class="${l.status === 'WARNING' ? 'text-amber-400' : 'text-indigo-400'}">[${l.node}]</span>
+            <span class="text-slate-500">${l.time}</span>
+          </div>
+          <div class="text-slate-300 leading-snug">${l.message}</div>
+        </div>
+      `).join('');
+    }
+
+    async function runPreset(key) {
+      const text = PRESETS[key];
+      await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_message: text })
+      });
+      loadState();
+    }
+
+    async function submitCustom() {
+      const input = document.getElementById('customInput');
+      if (!input.value.trim()) return;
+      await fetch('/api/enquiries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw_message: input.value })
+      });
+      input.value = '';
+      loadState();
+    }
+
+    async function approveDirect(id) {
+      await fetch('/api/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enquiry_id: id, action: 'APPROVE' })
+      });
+      loadState();
+    }
+
+    async function rejectPlan(id) {
+      await fetch('/api/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enquiry_id: id, action: 'REJECT' })
+      });
+      loadState();
+    }
+
+    function openModal(id, subject, encodedBody) {
+      activeEnquiryId = id;
+      document.getElementById('modalSubject').value = subject;
+      document.getElementById('modalBody').value = decodeURIComponent(encodedBody);
+      document.getElementById('editModal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('editModal').classList.add('hidden');
+    }
+
+    async function submitApprovalFromModal() {
+      const subj = document.getElementById('modalSubject').value;
+      const bdy = document.getElementById('modalBody').value;
+      await fetch('/api/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          enquiry_id: activeEnquiryId,
+          action: 'APPROVE',
+          edited_subject: subj,
+          edited_body: bdy
+        })
+      });
+      closeModal();
+      loadState();
+    }
+
+    async function resetData() {
+      await fetch('/api/reset', { method: 'POST' });
+      loadState();
+    }
+
+    // Auto-load on startup and poll every 4 seconds
+    loadState();
+    setInterval(loadState, 4000);
+  </script>
+</body>
+</html>
